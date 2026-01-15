@@ -1,0 +1,132 @@
+
+ في حاله هتتدفع فلوس وتشتغل علي جوجل ماب في عمليه البحث
+// Future<LatLng?> getLatLngFromAddress(String address) async {
+  //   final url = Uri.parse(
+  //     'https://maps.googleapis.com/maps/api/geocode/json'
+  //     '?address=${Uri.encodeComponent(address)}'
+  //     '&key=AIzaSyCtgFlLcXA57PQqlIMiGD2dObuoWWz1NuE',
+  //   );
+
+  //   final response = await NetworkUtilize.fetchUri(url);
+  //   if (response == null) return null;
+
+  //   final data = jsonDecode(response);
+
+  //   if (data['status'] != 'OK') return null;
+
+  //   final location = data['results'][0]['geometry']['location'];
+  //   return LatLng(location['lat'], location['lng']);
+  // }
+
+  // Future<void> drawRoute(LatLng destination) async {
+  //   final url = Uri.parse(
+  //     'https://maps.googleapis.com/maps/api/directions/json'
+  //     '?origin=${currentLatLng!.latitude},${currentLatLng!.longitude}'
+  //     '&destination=${destination.latitude},${destination.longitude}'
+  //     '&key=AIzaSyCtgFlLcXA57PQqlIMiGD2dObuoWWz1NuE',
+  //   );
+
+  //   final response = await NetworkUtilize.fetchUri(url);
+  //   if (response == null) return;
+
+  //   final data = jsonDecode(response);
+  //   final encoded = data['routes'][0]['overview_polyline']['points'];
+
+  //   final points = _decodePolyline(encoded);
+
+  //   setState(() {
+  //     polylines.clear();
+  //     polylines.add(
+  //       Polyline(
+  //         polylineId: const PolylineId('route'),
+  //         color: Colors.blue,
+  //         width: 5,
+  //         points: points,
+  //       ),
+  //     );
+  //   });
+  // }
+
+  // List<LatLng> _decodePolyline(String encoded) {
+  //   List<LatLng> poly = [];
+  //   int index = 0, len = encoded.length;
+  //   int lat = 0, lng = 0;
+
+  //   while (index < len) {
+  //     int b, shift = 0, result = 0;
+  //     do {
+  //       b = encoded.codeUnitAt(index++) - 63;
+  //       result |= (b & 0x1f) << shift;
+  //       shift += 5;
+  //     } while (b >= 0x20);
+  //     int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+  //     lat += dlat;
+
+  //     shift = 0;
+  //     result = 0;
+  //     do {
+  //       b = encoded.codeUnitAt(index++) - 63;
+  //       result |= (b & 0x1f) << shift;
+  //       shift += 5;
+  //     } while (b >= 0x20);
+  //     int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+  //     lng += dlng;
+
+  //     poly.add(LatLng(lat / 1E5, lng / 1E5));
+  //   }
+  //   return poly;
+  // }
+
+  // Set<Polygon> myPolygon() {
+  //   List<LatLng> polygonCoords = [];
+  //   polygonCoords.add(LatLng(30.0444, 31.2357)); // وسط القاهرة
+  //   polygonCoords.add(LatLng(30.0500, 31.2500)); // شمال شرق
+  //   polygonCoords.add(LatLng(30.0300, 31.2500)); // جنوب شرق
+  //   polygonCoords.add(LatLng(30.0300, 31.2200)); // جنوب غرب
+  //   polygonCoords.add(
+  //     LatLng(30.0444, 31.2357),
+  //   ); // نرجع لنقطة البداية لإغلاق المضلع
+
+  //   Set<Polygon> polygonSet = {};
+  //   polygonSet.add(
+  //     Polygon(
+  //       polygonId: PolygonId('1'),
+  //       points: polygonCoords,
+  //       strokeColor: Colors.red,
+  //     ),
+  //   );
+
+  //   return polygonSet;
+  // }// _onChange() {
+  //   placeSuggestion(_searchController.text);
+  // }
+
+  // void placeSuggestion(String input) async {
+  //   if (input.isEmpty) {
+  //     setState(() {
+  //       listOfLocations.clear();
+  //     });
+  //     return;
+  //   }
+  //   const String apiKey = "AIzaSyCtgFlLcXA57PQqlIMiGD2dObuoWWz1NuE";
+  //   // try {
+  //   String sessionToken = uuid.v4();
+  //   Uri uri = Uri.https(
+  //     "maps.googleapis.com",
+  //     'maps/api/place/autocomplete/json',
+
+  //     {"input": input, "key": apiKey, "sessiontoken": sessionToken},
+  //   );
+  //   String? response = await NetworkUtilize.fetchUri(uri);
+  //   if (response != null) {
+  //     PlaceAutocompleteResponse result =
+  //         PlaceAutocompleteResponse.parseAutocompleteResult(response);
+  //     print("//////////////////////////////////////////${result.status}");
+  //     if (result.predictions != null) {
+  //       setState(() {
+  //         listOfLocations = result.predictions!;
+  //       });
+  //       //  print(listOfLocations[1]);
+  //     }
+  //   }
+  // }

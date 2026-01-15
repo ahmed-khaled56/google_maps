@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_maps/features/maps/presentation/manager/map_cubit/map_cubit.dart';
 import 'package:google_maps/features/maps/presentation/views/home_view.dart';
 
 void main() {
@@ -12,6 +14,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: HomeView());
+    return BlocProvider(
+      create: (context) => MapCubit(),
+      child: MaterialApp(debugShowCheckedModeBanner: false, home: HomeView()),
+    );
   }
 }
