@@ -1,34 +1,33 @@
 import 'dart:collection';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps/cores/helper/network_utilize.dart';
 import 'package:google_maps/cores/helper/show_message.dart';
 import 'package:google_maps/features/maps/data/models/search_model/search_model.dart';
-import 'package:google_maps/features/maps/data/services/auto_complete_prediction.dart';
-import 'package:google_maps/features/maps/data/services/place_auto_complete_response.dart';
-import 'package:google_maps/features/maps/data/services/places_service.dart';
+import 'package:google_maps/features/maps/data/repos/sharedpref_service.dart';
 import 'package:google_maps/features/maps/presentation/manager/map_cubit/map_cubit.dart';
 import 'package:google_maps/features/maps/presentation/manager/map_cubit/map_cubit_states.dart';
 import 'package:google_maps/features/maps/presentation/views/widgets/CUSTOM_textField.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_webservice/places.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 
 class HomeViewBody extends StatefulWidget {
-  const HomeViewBody({super.key});
+  const HomeViewBody({super.key, required this.onHistoryChanged});
   final token = "1234567890";
+  final Function(SearchModel) onHistoryChanged;
 
   @override
-  State<HomeViewBody> createState() => _HomeViewBodyState();
+  State<HomeViewBody> createState() => HomeViewBodyState();
 }
 
-class _HomeViewBodyState extends State<HomeViewBody> {
+class HomeViewBodyState extends State<HomeViewBody> {
   GoogleMapController? _controller;
   final TextEditingController _searchController = TextEditingController();
+  void goToPlaceFromHistory(SearchModel place) {
+    _getDestenationLocation(placeName: place);
+  }
 
   LatLng? currentLocation;
   LatLng? destinationLocation;
@@ -75,7 +74,7 @@ class _HomeViewBodyState extends State<HomeViewBody> {
         );
       });
     } catch (e) {
-      _showMessage('تعذر الحصول على الموقع');
+      _showMessage('تعذر الحصول على الموقع${e.toString()}');
     }
   }
 
@@ -186,6 +185,7 @@ class _HomeViewBodyState extends State<HomeViewBody> {
   bool? isPressed = false;
   String? UserInput;
   String? selectedPlace;
+  List<SearchModel> historyList = [];
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -269,10 +269,12 @@ class _HomeViewBodyState extends State<HomeViewBody> {
                                 ),
                                 onTap: () {
                                   setState(() {
+                                    historyList.add(prediction[i]);
                                     isPressed = true;
                                     selectedPlace = prediction[i].displayName!;
                                     _searchController.clear();
                                   });
+                                  widget.onHistoryChanged(prediction[i]);
                                   _getDestenationLocation(
                                     placeName: prediction[i],
                                   );
