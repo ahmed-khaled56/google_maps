@@ -3,9 +3,10 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps/cores/helper/API.dart';
 import 'package:google_maps/cores/helper/show_message.dart';
 import 'package:google_maps/features/maps/data/models/search_model/search_model.dart';
-import 'package:google_maps/features/maps/data/repos/sharedpref_service.dart';
+import 'package:google_maps/features/maps/data/services/real_rout_service.dart';
 import 'package:google_maps/features/maps/presentation/manager/map_cubit/map_cubit.dart';
 import 'package:google_maps/features/maps/presentation/manager/map_cubit/map_cubit_states.dart';
 import 'package:google_maps/features/maps/presentation/views/widgets/CUSTOM_textField.dart';
@@ -23,6 +24,8 @@ class HomeViewBody extends StatefulWidget {
 }
 
 class HomeViewBodyState extends State<HomeViewBody> {
+  final routingService = RoutingService(API());
+
   GoogleMapController? _controller;
   final TextEditingController _searchController = TextEditingController();
   void goToPlaceFromHistory(SearchModel place) {
@@ -38,7 +41,45 @@ class HomeViewBodyState extends State<HomeViewBody> {
     super.initState();
     _searchController.addListener(() {});
     getCustomMarker();
-    _getCurrentLocation();
+    _checkLocationStatus();
+  }
+
+  bool _locationAllowed = false;
+  bool _checkingPermission = true;
+
+  Future<void> _checkLocationStatus() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (!serviceEnabled ||
+        permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      setState(() {
+        _locationAllowed = false;
+        _checkingPermission = false;
+      });
+    } else {
+      setState(() {
+        _locationAllowed = true;
+        _checkingPermission = false;
+      });
+      _getCurrentLocation();
+    }
+  }
+
+  Future<void> _requestLocationPermission() async {
+    LocationPermission permission = await Geolocator.requestPermission();
+
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      setState(() {
+        _locationAllowed = true;
+      });
+      _getCurrentLocation();
+    } else if (permission == LocationPermission.deniedForever) {
+      showSnackBar(context, 'من فضلك فعّل الموقع من الإعدادات');
+      await openAppSettings();
+    }
   }
 
   void _showMessage(String msg) {
@@ -79,41 +120,76 @@ class HomeViewBodyState extends State<HomeViewBody> {
   }
 
   LatLng? DestnationLtLng;
+  // Future<void> _getDestenationLocation({required SearchModel placeName}) async {
+  //   try {
+  //     final lat = double.parse(placeName.lat!);
+  //     final lon = double.parse(placeName.lon!);
+  //     LatLng DestnationLtLng = LatLng(lat, lon);
+
+  //     _controller?.animateCamera(
+  //       CameraUpdate.newLatLngZoom(DestnationLtLng, 15),
+  //     );
+
+  //     setState(() {
+  //       getCustomMarker();
+  //       myMarkers.removeWhere((m) => m.markerId.value == "Dest_location");
+
+  //       myMarkers.add(
+  //         Marker(
+  //           markerId: const MarkerId("Dest_location"),
+  //           position: DestnationLtLng,
+  //           infoWindow: const InfoWindow(title: "وجهتك"),
+  //         ),
+  //       );
+  //       if (currentLatLng != null) {
+  //         polylines.clear();
+  //         polylines.add(
+  //           Polyline(
+  //             polylineId: const PolylineId("route"),
+  //             color: Colors.blue,
+  //             width: 5,
+  //             points: [currentLatLng!, DestnationLtLng],
+  //           ),
+  //         );
+  //       }
+  //     });
+  //   } catch (e) {
+  //     _showMessage('تعذر الحصول على الموقع');
+  //   }
+  // }
   Future<void> _getDestenationLocation({required SearchModel placeName}) async {
     try {
       final lat = double.parse(placeName.lat!);
       final lon = double.parse(placeName.lon!);
-      LatLng DestnationLtLng = LatLng(lat, lon);
+      final dest = LatLng(lat, lon);
 
-      _controller?.animateCamera(
-        CameraUpdate.newLatLngZoom(DestnationLtLng, 15),
-      );
+      final routePoints = await routingService.getRoute(currentLatLng!, dest);
+
+      _controller?.animateCamera(CameraUpdate.newLatLngZoom(dest, 15));
 
       setState(() {
-        getCustomMarker();
         myMarkers.removeWhere((m) => m.markerId.value == "Dest_location");
 
         myMarkers.add(
           Marker(
             markerId: const MarkerId("Dest_location"),
-            position: DestnationLtLng,
+            position: dest,
             infoWindow: const InfoWindow(title: "وجهتك"),
           ),
         );
-        if (currentLatLng != null) {
-          polylines.clear();
-          polylines.add(
-            Polyline(
-              polylineId: const PolylineId("route"),
-              color: Colors.blue,
-              width: 5,
-              points: [currentLatLng!, DestnationLtLng],
-            ),
-          );
-        }
+
+        polylines.clear();
+        polylines.add(
+          Polyline(
+            polylineId: const PolylineId("route"),
+            points: routePoints, // ✅ طريق حقيقي
+            width: 5,
+            color: Colors.blue,
+          ),
+        );
       });
     } catch (e) {
-      _showMessage('تعذر الحصول على الموقع');
+      _showMessage('تعذر الحصول على الطريق');
     }
   }
 
@@ -188,6 +264,14 @@ class HomeViewBodyState extends State<HomeViewBody> {
   List<SearchModel> historyList = [];
   @override
   Widget build(BuildContext context) {
+    if (_checkingPermission) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_locationAllowed) {
+      return _EnableLocationView(onEnable: _requestLocationPermission);
+    }
+
     return SafeArea(
       child: SizedBox.expand(
         child: Stack(
@@ -295,6 +379,43 @@ class HomeViewBodyState extends State<HomeViewBody> {
                   showSnackBar(context, state.errMessage);
                 }
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EnableLocationView extends StatelessWidget {
+  final VoidCallback onEnable;
+
+  const _EnableLocationView({required this.onEnable});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.location_off, size: 80, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'نحتاج للوصول إلى موقعك',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'لتحديد موقعك ورسم الطريق بدقة',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onEnable,
+              icon: const Icon(Icons.location_on),
+              label: const Text('تفعيل الموقع'),
             ),
           ],
         ),

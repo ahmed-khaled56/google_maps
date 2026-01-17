@@ -3,7 +3,7 @@ import 'package:google_maps/features/maps/data/models/search_model/search_model.
 import 'package:google_maps/features/maps/data/repos/sharedpref_service.dart';
 
 class CustomHistoryList extends StatelessWidget {
-  CustomHistoryList({
+  const CustomHistoryList({
     super.key,
     required this.historyList,
     this.onTap,
